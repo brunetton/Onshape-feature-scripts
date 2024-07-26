@@ -29,7 +29,8 @@ export const myFeature = defineFeature(function(context is Context, id is Id, de
         });
         var entity_size =  box3D.maxCorner - box3D.minCorner;
         // debug(context, entity_size);
-
+        var transforms = [];
+        var names = [];
         for (var row = 0; row < definition.rows; row+=1) {
             // Determine starting column offset for odd rows
             var colOffset = row % 2 == 0 ? 0 : 1;
@@ -40,19 +41,22 @@ export const myFeature = defineFeature(function(context is Context, id is Id, de
                     // nothing to do for the first one, just keep original one
                     continue;
                 }
-                var name =  id[0] ~ '-' ~ i;
+
+                names = append(names, id[0] ~ '-' ~ i);
                 // debug(context, "row-col: " ~ row ~ "-" ~ col);
-                opPattern(context, id + "pattern" + i, {
-                        "entities" : definition.entity,
-                        "transforms" : [transform(vector(
-                            row*(entity_size[0] + definition.xSpacing),
-                            col*(entity_size[1] + definition.ySpacing),
-                            0*inch
-                        ))],
-                        "instanceNames" : [name]
-                });
+                transforms = append(transforms, transform(vector(
+                    row*(entity_size[0] + definition.xSpacing),
+                    col*(entity_size[1] + definition.ySpacing),
+                    0*inch
+                )));
                 i += 1;
             }
         }
+        opPattern(context, id + "pattern", {
+                "entities" : definition.entity,
+                "transforms" : transforms,
+                "instanceNames" : names
+        });
+
     }
 );
