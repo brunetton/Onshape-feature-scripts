@@ -4,19 +4,19 @@ FeatureScript 2411;
 import(path : "onshape/std/common.fs", version : "2411.0");
 
 annotation { "Feature Type Name" : "Chess duplicate patern", "Feature Type Description" : "" }
-export const myFeature = defineFeature(function(context is Context, id is Id, definition is map)
+export const chessPattern = defineFeature(function(context is Context, id is Id, definition is map)
     precondition
     {
         annotation { "Name" : "Entity", "Filter" : EntityType.BODY, "MaxNumberOfPicks" : 1 }
         definition.entity is Query;
-        annotation { "Name" : "Rows" }
+        annotation { "Name" : "Rows", "UIHint" : "REMEMBER_PREVIOUS_VALUE"}
         isInteger(definition.rows, POSITIVE_COUNT_BOUNDS);
-        annotation { "Name" : "Cols" }
+        annotation { "Name" : "Cols", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
         isInteger(definition.cols, POSITIVE_COUNT_BOUNDS);
-        annotation { "Name" : "X spacing" }
-        isLength(definition.xSpacing, NONNEGATIVE_ZERO_INCLUSIVE_LENGTH_BOUNDS);
-        annotation { "Name" : "Y spacing" }
-        isLength(definition.ySpacing, NONNEGATIVE_ZERO_INCLUSIVE_LENGTH_BOUNDS);
+        annotation { "Name" : "X spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
+        isLength(definition.xSpacing, { (millimeter) : [0, 0, 100000000] } as LengthBoundSpec);
+        annotation { "Name" : "Y spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
+        isLength(definition.ySpacing, { (millimeter) : [0, 0, 100000000] } as LengthBoundSpec);
     }
 
     {
@@ -31,6 +31,7 @@ export const myFeature = defineFeature(function(context is Context, id is Id, de
         // debug(context, entity_size);
         var transforms = [];
         var names = [];
+        // Prepare transforms and names arrrays that will be passed to opPattern()
         for (var row = 0; row < definition.rows; row+=1) {
             // Determine starting column offset for odd rows
             var colOffset = row % 2 == 0 ? 0 : 1;
@@ -52,6 +53,7 @@ export const myFeature = defineFeature(function(context is Context, id is Id, de
                 i += 1;
             }
         }
+        // Finally call opPattern()
         opPattern(context, id + "pattern", {
                 "entities" : definition.entity,
                 "transforms" : transforms,
