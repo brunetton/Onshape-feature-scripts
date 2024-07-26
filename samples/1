@@ -1,0 +1,456 @@
+// https://cad.onshape.com/documents/5789a3c4e4b0e65410faa582/w/dc0aed9cbd48b77b511c6127/e/8f9424071bfc5d3c709c9bfb
+
+FeatureScript 370;
+import(path : "onshape/std/geometry.fs", version : "370.0");
+
+// Constants
+const FIVE_SIXTY_FOURTHS_INCH = 5 / 64 * inch;
+const THREE_SIXTEENS_INCH = 3 / 16 * inch;
+const THREE_EIGHTS_INCH = 3 / 8 * inch;
+const HALF_INCH = 1/2 * inch;
+const NINE_SIXTEENS = (9/16) * inch;
+const FIVE_EIGHTS_INCH = 5/8 * inch;
+const THREE_QUARTERS_INCH = 3/4 * inch;
+const SEVEN_EIGHTS_INCH = 7/8 * inch;
+const ONE_INCH = 1 * inch;
+const ONE_ONE_EIGHT_INCH = (1 + 1/8) * inch;
+const ONE_ONE_QUARTER_INCH = (1 + 1/4) * inch;
+const ONE_THREE_EIGHTS_INCH = (1 + 3/8) * inch;
+const ONE_ONE_HALF_INCH = (1 + 1/2) * inch;
+const ONE_SEVEN_EIGHTS_INCH = (1 + 7/8) * inch;
+const TWO_INCHES = 2 * inch;
+const TWO_ONE_HALF_INCHES = (2 + 1/2) * inch;
+const THREE_INCHES = 3 * inch;
+const FOUR_INCHES = 4 * inch;
+const EIGHT_INCHES = 8 * inch;
+const SIXTEEN_INCHES = 16 * inch;
+
+export enum Application
+{
+    annotation { "Name" : "Right Angle" }
+    RIGHT_ANGLE,
+    annotation { "Name" : "Frame" }
+    FRAME
+}
+
+// Helper function for UID creation
+function getUID(id is Id, name is string, index is number)
+{
+    return id + (name ~ index);
+}
+
+annotation { "Feature Type Name" : "Pocket Holes" }
+export const pocketHoles = defineFeature(function(context is Context, id is Id, definition is map)
+precondition
+{
+    annotation { "Name" : "Select edge", "Filter" : (EntityType.EDGE && GeometryType.LINE && ConstructionObject.NO && SketchObject.NO), "MaxNumberOfPicks" : 1 }
+    definition.edge is Query;
+    annotation { "Name" : "Application" }
+    definition.application is Application;
+    annotation { "Name" : "Add Mate Connectors" }
+    definition.addMates is boolean;
+}
+{
+    const partToCut = qOwnerBody(definition.edge);
+    const bodyFaces = qEdgeAdjacent(definition.edge, EntityType.FACE);
+
+    // Get the two faces adjacent to edge
+    var entryFace is Query = qNthElement(bodyFaces, 0); // Face where the pocket holes are drilled
+    var exitFace is Query = qNthElement(bodyFaces, 1); // Face where the screws come out
+
+    // Only possible to have two faces for one edge so find the area for each face
+    const faceAreas = [evArea(context, { "entities" : entryFace }), evArea(context, { "entities" : exitFace })];
+
+    // Find which face is the smallest and therefore the tenon face
+    if (faceAreas[0] < faceAreas[1])
+    {
+        entryFace = qNthElement(bodyFaces, 1);
+        exitFace = qNthElement(bodyFaces, 0);
+    }
+
+    // Get all edges of the tenon face
+    const exitFaceEdges = qEdgeAdjacent(exitFace, EntityType.EDGE);
+    const edgeLengths = [evLength(context, {
+                "entities" : qNthElement(exitFaceEdges, 0)
+        }),
+        evLength(context, {
+                "entities" : qNthElement(exitFaceEdges, 1)
+        }),
+        evLength(context, {
+                "entities" : qNthElement(exitFaceEdges, 2)
+        }),
+        evLength(context, {
+                "entities" : qNthElement(exitFaceEdges, 3)
+        })];
+
+    // Determine actual thickness to be used for screw length and depths below
+    // by finding the shortest edge
+    // Start with highest thickness and work down
+    var actualThickness = ONE_ONE_HALF_INCH;
+    for (var i = 0; i < 4; i += 1)
+    {
+        if( edgeLengths[i] < actualThickness)
+        {
+            actualThickness = edgeLengths[i];
+        }
+    }
+
+    // The thickness is used to determine the screw length
+    // and the depth of the pocket hole
+    // Assume 1/2 inch to start, the smallest thickness available
+    var thickness = HALF_INCH;
+    var screwLength = THREE_QUARTERS_INCH;
+    var depth = screwLength - (0.436 * inch);
+
+    if( actualThickness >= FIVE_EIGHTS_INCH && actualThickness < THREE_QUARTERS_INCH )
+    {
+        thickness = FIVE_EIGHTS_INCH;
+        screwLength = ONE_INCH;
+
+        if( definition.application == Application.RIGHT_ANGLE )
+        {
+            depth = screwLength - (0.436 * inch);
+        }
+        else
+        {
+            screwLength = ONE_ONE_QUARTER_INCH;
+            depth = screwLength - (0.644 * inch);
+        }
+    }
+    else if( actualThickness >= THREE_QUARTERS_INCH && actualThickness < SEVEN_EIGHTS_INCH )
+    {
+        thickness = THREE_QUARTERS_INCH;
+        screwLength = ONE_ONE_QUARTER_INCH;
+        depth = screwLength - (0.644 * inch);
+    }
+    else if( actualThickness >= SEVEN_EIGHTS_INCH && actualThickness < ONE_INCH )
+    {
+        thickness = SEVEN_EIGHTS_INCH;
+        screwLength = ONE_ONE_HALF_INCH;
+        depth = screwLength - (0.809 * inch);
+    }
+    else if( actualThickness >= ONE_INCH && actualThickness < ONE_ONE_EIGHT_INCH )
+    {
+        thickness = ONE_INCH;
+        screwLength = ONE_ONE_HALF_INCH;
+        depth = screwLength - (0.809 * inch);
+    }
+    else if( actualThickness >= ONE_ONE_EIGHT_INCH && actualThickness < ONE_ONE_QUARTER_INCH )
+    {
+        thickness = ONE_ONE_EIGHT_INCH;
+        screwLength = ONE_ONE_HALF_INCH;
+        depth = screwLength - (0.894 * inch);
+    }
+    else if( actualThickness >= ONE_ONE_QUARTER_INCH && actualThickness < ONE_THREE_EIGHTS_INCH )
+    {
+        thickness = ONE_ONE_QUARTER_INCH;
+        screwLength = TWO_INCHES;
+        depth = screwLength - (1.128 * inch);
+    }
+    else if( actualThickness >= ONE_THREE_EIGHTS_INCH && actualThickness < ONE_ONE_HALF_INCH )
+    {
+        thickness = ONE_THREE_EIGHTS_INCH;
+        screwLength = TWO_INCHES;
+        depth = screwLength - (1.224 * inch);
+    }
+    else if( actualThickness >= ONE_ONE_HALF_INCH )
+    {
+        thickness = ONE_ONE_HALF_INCH;
+        screwLength = TWO_ONE_HALF_INCHES;
+        depth = screwLength - (1.224 * inch);
+    }
+
+    // Length of joint edge
+    const edgeLength = evLength(context, {
+                "entities" : definition.edge
+            });
+
+    var locationPoints is array = [];
+
+    // Calculate offset for pocket holes positions
+    var offset = (0 * inch / edgeLength);
+    if(edgeLength >= ONE_INCH && edgeLength < TWO_INCHES)
+    {
+        // Use B/C Guides
+        offset = (NINE_SIXTEENS / edgeLength);
+    }
+    else if(edgeLength >= TWO_INCHES && edgeLength < THREE_INCHES)
+    {
+        // Use A/B Guides
+        offset = (SEVEN_EIGHTS_INCH / edgeLength);
+    }
+    else if(edgeLength >= THREE_INCHES && edgeLength < SIXTEEN_INCHES)
+    {
+        // Use A/C Guides
+        offset = (ONE_SEVEN_EIGHTS_INCH) / edgeLength;
+    }
+    else if(edgeLength >= SIXTEEN_INCHES)
+    {
+        // More than 16 inches, follow guideline of a pocket hole
+        // 2 inches from each edge and the rest between 6 to 8 inches
+        // in between.
+        offset = (TWO_INCHES) / edgeLength;
+    }
+
+    // Generate pocket holes positions
+    if( edgeLength >= ONE_INCH && edgeLength < SIXTEEN_INCHES)
+    {
+        // Generate points for pocket holes positions
+        opPoint(context, id + "point1", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.5 - offset
+                            }).origin
+        });
+
+        opPoint(context, id + "point2", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.5 + offset
+                            }).origin
+        });
+
+        // Create array of points to be iterated for pocket holes creation
+        locationPoints = [ qCreatedBy(id + "point1", EntityType.VERTEX), qCreatedBy(id + "point2", EntityType.VERTEX) ];
+    }
+    else if(edgeLength >= FOUR_INCHES && edgeLength < SIXTEEN_INCHES)
+    {
+        opPoint(context, id + "point1", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.0 + offset
+                            }).origin
+        });
+
+        opPoint(context, id + "point2", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.5
+                            }).origin
+        });
+
+        opPoint(context, id + "point3", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 1.0 - offset
+                            }).origin
+        });
+
+        locationPoints = [ qCreatedBy(id + "point1", EntityType.VERTEX), qCreatedBy(id + "point2", EntityType.VERTEX), qCreatedBy(id + "point3", EntityType.VERTEX) ];
+    }
+    else if(edgeLength >= SIXTEEN_INCHES)
+    {
+        opPoint(context, id + "point1", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.0 + offset
+                            }).origin
+        });
+
+        opPoint(context, id + "point2", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 1.0 - offset
+                            }).origin
+        });
+
+        locationPoints = [ qCreatedBy(id + "point1", EntityType.VERTEX), qCreatedBy(id + "point2", EntityType.VERTEX) ];
+
+        // Calculate available length
+        // Substract the 4 inches for the side pocket holes
+        const availLength = edgeLength - FOUR_INCHES;
+
+        // Find optimal number of pocket holes
+        // Recommendation is for pocket holes to be between 6 to 8 inches
+        // There might be cases where the offset is less than 6 inches
+        // The algorithm errs on the side of more pocket holes is better
+        // than less
+        // Start with 2
+        var count = 2;
+        while( (availLength / count) > EIGHT_INCHES)
+        {
+            count = count + 1;
+        }
+
+        // This is the offset between pocket holes
+        const new_offset = (availLength / count) / edgeLength;
+        // Iterate through the number of pocket holes to be created
+        for( var p = 0; p < count - 1; p += 1)
+        {
+            opPoint(context, getUID(id, "point", p + 3), {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : offset + (new_offset * (p + 1) ) // Equation to calculate offset for pocket hole p
+                }).origin
+            });
+
+            locationPoints = append(locationPoints,
+                                    qCreatedBy( getUID(id, "point", p + 3), EntityType.VERTEX)
+                                );
+        }
+    }
+    else
+    {
+        // Put one pocket hole in the middle
+        opPoint(context, id + "point1", {
+                "point" :evEdgeTangentLine(context, {
+                                "edge" : definition.edge,
+                                "parameter" : 0.5
+                            }).origin
+        });
+
+        locationPoints = [ qCreatedBy(id + "point1", EntityType.VERTEX) ];
+    }
+
+    var exitPlane is Plane = evPlane(context, {
+        "face" : exitFace
+    });
+
+    var entryPlane is Plane = evPlane(context, {
+        "face" : entryFace
+    });
+
+    // Iterate through all the pocket hole positions in the array
+    // Use index to calculate unique IDs on each pass of the loop
+    var index is number = 1;
+    for (var locationPoint in locationPoints)
+    {
+        var startOrigin is Vector = evVertexPoint(context, {
+            "vertex" : locationPoint
+        });
+
+        // Calculate vector for both the entry plane normal
+        // and exit plane normal
+        var xVector is Vector = normalize(entryPlane.normal) * meter;
+        var zVector is Vector = -exitPlane.normal * meter;
+
+        // Use xVector and zVector to create a new coordinate system
+        var cSys is CoordSystem = coordSystem(startOrigin, xVector, zVector);
+
+        // Calculate a new origin vector that is in the middle of the exit face,
+        // where the screw should come out
+        var newOrigin is Vector = toWorld( cSys, vector(  -thickness / 2, 0 * inch, 0 * inch ) );
+
+        // Create a new line at the world origin to be used as an axis for rotations
+        var yLine is Line = line(vector(0, 0, 0) * meter, normalize(cross(zVector, xVector)));
+
+        // Rotate zVector 15 degrees around the y axis.
+        // Pocket holes have this inclination
+        zVector = rotationAround(yLine, 15 * degree) * zVector;
+        // Create a new y axis at the new origin, in the middle of the face
+        yLine = line(newOrigin, normalize(cross(-exitPlane.normal, xVector)));
+        // Use the new y axis and the rotated zVector to generate a new rotated xVector
+        xVector = normalize(cross(yLine.direction, zVector));
+
+        // Create a new origin coordinate system on the new origin
+        // using the rotated x and z vectors
+        var originCSys is CoordSystem = coordSystem(newOrigin, xVector, zVector);
+
+        // Create new coordinate systems for sketches
+        // A pocket hole has a small hole that goes deeper
+        // and a bigger hole that is shallower
+        // There is a half inch between the end of the drill bit and the beginning of the bigger hole
+        var smallHoleOrigin is Vector = toWorld(originCSys, vector(0 * inch, 0 * inch, depth - (HALF_INCH) ) );
+        var bigHoleOrigin is Vector = toWorld(originCSys, vector(0 * inch, 0 * inch, depth));
+
+        var cSysSmallHole is CoordSystem = coordSystem(smallHoleOrigin, xVector, zVector);
+        var cSysBigHole is CoordSystem = coordSystem(bigHoleOrigin, xVector, zVector);
+
+        // If the user requested mate connectors, add them on every pocket hole
+        if (definition.addMates)
+        {
+            opMateConnector(context, getUID(id, "mateConnector", index), {
+                "coordSystem" : cSysBigHole,
+                "owner" : partToCut
+            });
+        }
+
+        // Create two planes, one for each sketch
+        var smallHoleSketchPlane is Plane = plane(cSysSmallHole);
+        var bigHoleSketchPlane is Plane = plane(cSysBigHole);
+
+        var exitPoint = vector(0, 0) * inch;
+
+        var sketchID = getUID(id, "sketch", index);
+        var sketch1 = newSketchOnPlane(context, sketchID, {
+            "sketchPlane" : smallHoleSketchPlane
+        });
+
+        // Sketch 1 - Small Hole
+        skPoint(sketch1, "point1", {
+            "position" : exitPoint
+        });
+
+        // This circle will be extruded to make the small hole
+        skCircle(sketch1, "circle1", {
+            "center" : exitPoint,
+            "radius" : FIVE_SIXTY_FOURTHS_INCH
+        });
+
+        // Finalize small hole sketch
+        skSolve(sketch1);
+
+        // Extrude small hole
+        var regionToExtrude = qSketchRegion( getUID(id, "sketch", index));
+        opExtrude(context,  getUID(id, "extrude", index), {
+            "entities" : regionToExtrude,
+            "direction" : evOwnerSketchPlane(context, { "entity" : regionToExtrude }).normal,
+            "endBound" : BoundingType.THROUGH_ALL
+        });
+
+        // Use the small hole extrusion to substract it from the part
+        opBoolean(context, getUID(id, "boolean", index), {
+            "tools" : qCreatedBy( getUID(id, "extrude", index), EntityType.BODY),
+            "targets" : partToCut,
+            "operationType" : BooleanOperationType.SUBTRACTION
+        });
+
+        // Remove the sketch, is not needed anymore
+        opDeleteBodies(context, getUID(id, "delete", index), {
+            "entities" : qCreatedBy( getUID(id, "sketch", index), EntityType.BODY)
+        });
+
+        // Sketch 2 - Big Hole
+        sketchID = getUID(id, "sketch", index + 1);
+        var sketch2 = newSketchOnPlane(context, sketchID, {
+            "sketchPlane" : bigHoleSketchPlane
+        });
+
+        // This circle will be extruded to make the big hole
+        skCircle(sketch2, "circle1", {
+            "center" : exitPoint,
+            "radius" : THREE_SIXTEENS_INCH
+        });
+
+        // Finalize big hole sketch
+        skSolve(sketch2);
+
+        // Extrude big hole
+        regionToExtrude = qSketchRegion( getUID(id, "sketch", index + 1));
+        opExtrude(context,  getUID(id, "extrude", index + 1), {
+            "entities" : regionToExtrude,
+            "direction" : evOwnerSketchPlane(context, { "entity" : regionToExtrude }).normal,
+            "endBound" : BoundingType.THROUGH_ALL
+        });
+
+        // Use the big hole extrusion to substract it from the part
+        opBoolean(context, getUID(id, "boolean",index + 1), {
+            "tools" : qCreatedBy( getUID(id, "extrude", index + 1), EntityType.BODY),
+            "targets" : partToCut,
+            "operationType" : BooleanOperationType.SUBTRACTION
+        });
+
+        // Remove the sketch, is not needed anymore
+        opDeleteBodies(context, getUID(id, "delete", index + 1), {
+            "entities" : qCreatedBy( getUID(id, "sketch", index + 1), EntityType.BODY)
+        });
+
+        // Remove pocket hole position, not needed anymore
+        opDeleteBodies(context, getUID(id, "delete", index + 2), {
+                "entities" : locationPoint
+        });
+
+        // Increment index to avoid duplicate IDs
+        index = index + 3;
+    }
+});
