@@ -24,6 +24,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         }
         annotation { "Name" : "Entity", "Filter" : EntityType.BODY && BodyType.SOLID, "MaxNumberOfPicks" : 1 }
         definition.entity is Query;
+        annotation { "Name" : "Keep entity"}
+        definition.keepEntity is boolean;
         annotation { "Name" : "Rows", "UIHint" : "REMEMBER_PREVIOUS_VALUE"}
         isInteger(definition.rows, POSITIVE_COUNT_BOUNDS);
         annotation { "Name" : "Flip", "UIHint" : UIHint.OPPOSITE_DIRECTION }
@@ -86,6 +88,10 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 "instanceNames" : names
         });
 
+        // Delete original entitie (if asked)
+        if (! definition.keepEntity) opDeleteBodies(context, id + "delete", { "entities" : definition.entity });
+
+        // Boolean operations if asked
         if (definition.bool != BoolOpts.NEW_BODIES) {
             // Execute boolean operations
             var tools = qUnion(qCreatedBy(featureId, EntityType.BODY), definition.entity);
