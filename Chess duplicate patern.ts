@@ -19,10 +19,10 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         definition.bool is BoolOpts;
 
         if (definition.bool != BoolOpts.NEW_BODIES) {
-            annotation { "Name" : "Merge scope", "Filter" : EntityType.BODY }
+            annotation { "Name" : "Merge scope", "Filter" : EntityType.BODY && BodyType.SOLID }
             definition.mergeScope is Query;
         }
-        annotation { "Name" : "Entity", "Filter" : EntityType.BODY, "MaxNumberOfPicks" : 1 }
+        annotation { "Name" : "Entity", "Filter" : EntityType.BODY && BodyType.SOLID, "MaxNumberOfPicks" : 1 }
         definition.entity is Query;
         annotation { "Name" : "Rows", "UIHint" : "REMEMBER_PREVIOUS_VALUE"}
         isInteger(definition.rows, POSITIVE_COUNT_BOUNDS);
