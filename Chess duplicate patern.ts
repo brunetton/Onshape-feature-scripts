@@ -29,9 +29,9 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         annotation { "Name" : "Cols", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
         isInteger(definition.cols, POSITIVE_COUNT_BOUNDS);
         annotation { "Name" : "X spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
-        isLength(definition.xSpacing, { (millimeter) : [0, 0, 100000000] } as LengthBoundSpec);
+        isLength(definition.xSpacing, { (millimeter) : [-100000000, 0, 100000000] } as LengthBoundSpec);
         annotation { "Name" : "Y spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
-        isLength(definition.ySpacing, { (millimeter) : [0, 0, 100000000] } as LengthBoundSpec);
+        isLength(definition.ySpacing, { (millimeter) : [-100000000, 0, 100000000] } as LengthBoundSpec);
     }
 
     {
