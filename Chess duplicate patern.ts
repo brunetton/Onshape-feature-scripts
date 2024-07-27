@@ -26,8 +26,12 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         definition.entity is Query;
         annotation { "Name" : "Rows", "UIHint" : "REMEMBER_PREVIOUS_VALUE"}
         isInteger(definition.rows, POSITIVE_COUNT_BOUNDS);
+        annotation { "Name" : "Flip", "UIHint" : UIHint.OPPOSITE_DIRECTION }
+        definition.colsFlipped is boolean;
         annotation { "Name" : "Cols", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
         isInteger(definition.cols, POSITIVE_COUNT_BOUNDS);
+        annotation { "Name" : "Flip", "UIHint" : UIHint.OPPOSITE_DIRECTION }
+        definition.rowsFlipped is boolean;
         annotation { "Name" : "X spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
         isLength(definition.xSpacing, { (millimeter) : [-100000000, 0, 100000000] } as LengthBoundSpec);
         annotation { "Name" : "Y spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
@@ -44,6 +48,11 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         });
         var entity_size =  box3D.maxCorner - box3D.minCorner;
         // debug(context, entity_size);
+        // flip directions if asked
+        var rowsDirection = 1;
+        var colsDirection = -1;
+        if (definition.rowsFlipped) rowsDirection = -1;
+        if (definition.colsFlipped) colsDirection = 1;
         var transforms = [];
         var names = [];
         // Prepare transforms and names arrrays that will be passed to opPattern()
@@ -61,8 +70,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 names = append(names, id[0] ~ '-' ~ i);
                 // debug(context, "row-col: " ~ row ~ "-" ~ col);
                 transforms = append(transforms, transform(vector(
-                    row*(entity_size[0] + definition.xSpacing),
-                    col*(entity_size[1] + definition.ySpacing),
+                    rowsDirection * row * (entity_size[0] + definition.xSpacing),
+                    colsDirection * col * (entity_size[1] + definition.ySpacing),
                     0*inch
                 )));
                 i += 1;
