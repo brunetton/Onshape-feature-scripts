@@ -3,10 +3,25 @@
 FeatureScript 2411;
 import(path : "onshape/std/common.fs", version : "2411.0");
 
-annotation { "Feature Type Name" : "Chess duplicate patern", "Feature Type Description" : "" }
+
+export enum BoolOpts {
+    annotation { "Name" : "New" }       NEW_BODIES,
+    annotation { "Name" : "Union" }     UNION,
+    annotation { "Name" : "Subtract" }  SUBTRACT,
+    annotation { "Name" : "Intersect" } INTERSECT,
+}
+
+annotation { "Feature Type Name" : "Chess duplicate patern", "Feature Type Description" : "Duplicate selected part using to create a chess board like pattern." }
 export const chessPattern = defineFeature(function(context is Context, id is Id, definition is map)
     precondition
     {
+        annotation { "Name" : "Boolean", "UIHint" : "HORIZONTAL_ENUM" }
+        definition.bool is BoolOpts;
+
+        if (definition.bool != BoolOpts.NEW_BODIES) {
+            annotation { "Name" : "Merge scope", "Filter" : EntityType.BODY }
+            definition.mergeScope is Query;
+        }
         annotation { "Name" : "Entity", "Filter" : EntityType.BODY, "MaxNumberOfPicks" : 1 }
         definition.entity is Query;
         annotation { "Name" : "Rows", "UIHint" : "REMEMBER_PREVIOUS_VALUE"}
@@ -53,12 +68,35 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 i += 1;
             }
         }
+
         // Finally call opPattern()
-        opPattern(context, id + "pattern", {
+        var featureId = id + "pattern";
+        opPattern(context, featureId, {
                 "entities" : definition.entity,
                 "transforms" : transforms,
                 "instanceNames" : names
         });
 
+        if (definition.bool != BoolOpts.NEW_BODIES) {
+            // Execute boolean operations
+            var tools = qUnion(qCreatedBy(featureId, EntityType.BODY), definition.entity);
+            // debug(context, tools, DebugColor.YELLOW);
+            var boolType;
+            if (definition.bool == BoolOpts.UNION) boolType = BooleanOperationType.UNION;
+            if (definition.bool == BoolOpts.SUBTRACT) boolType = BooleanOperationType.SUBTRACTION;
+            if (definition.bool == BoolOpts.INTERSECT) boolType = BooleanOperationType.INTERSECTION;
+            try {
+                opBoolean(context, id + "boolean1", {
+                    "operationType" : boolType,
+                    "tools" : tools,
+                    "targets" : definition.mergeScope,
+                    "targetsAndToolsNeedGrouping" : true,
+                });
+            }
+            catch (error) {
+                throw regenError("Error executing " ~ boolType ~ " boolean operation");
+            }
+        }
     }
 );
+
