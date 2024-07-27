@@ -48,7 +48,7 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
             "topology" : definition.entity,
             "tight" : true
         });
-        var entity_size =  box3D.maxCorner - box3D.minCorner;
+        var entity_size = box3D.maxCorner - box3D.minCorner;
         // debug(context, entity_size);
         // flip directions if asked
         var rowsDirection = 1;
@@ -64,10 +64,6 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
 
             // Iterate through columns with offset for odd rows
             for (var col = colOffset; col < definition.cols; col += 2) {
-                if (row == 0 && col == 0) {
-                    // nothing to do for the first one, just keep original one
-                    continue;
-                }
 
                 names = append(names, id[0] ~ '-' ~ i);
                 // debug(context, "row-col: " ~ row ~ "-" ~ col);
@@ -80,7 +76,7 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
             }
         }
 
-        // Finally call opPattern()
+        // call opPattern() (create copies)
         var featureId = id + "pattern";
         opPattern(context, featureId, {
                 "entities" : definition.entity,
@@ -94,8 +90,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
         // Boolean operations if asked
         if (definition.bool != BoolOpts.NEW_BODIES) {
             // Execute boolean operations
-            var tools = qUnion(qCreatedBy(featureId, EntityType.BODY), definition.entity);
-            // debug(context, tools, DebugColor.YELLOW);
+            var tools = qCreatedBy(featureId, EntityType.BODY);
+            // debug(context,  qUnion(tools, definition.mergeScope), DebugColor.YELLOW);
             var boolType;
             if (definition.bool == BoolOpts.UNION) boolType = BooleanOperationType.UNION;
             if (definition.bool == BoolOpts.SUBTRACT) boolType = BooleanOperationType.SUBTRACTION;
