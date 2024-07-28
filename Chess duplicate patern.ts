@@ -44,6 +44,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 isLength(definition.xSpacing, { (millimeter) : [-100000000, 0, 100000000] } as LengthBoundSpec);
                 annotation { "Name" : "Y spacing", "UIHint" : "REMEMBER_PREVIOUS_VALUE" }
                 isLength(definition.ySpacing, { (millimeter) : [-100000000, 0, 100000000] } as LengthBoundSpec);
+                annotation { "Name" : "Absolute" }
+                definition.absolute is boolean;
             }
         }
 
@@ -80,6 +82,12 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
             xSpacing = definition.xSpacing;
             ySpacing = definition.ySpacing;
         }
+        var totalXSpacing = xSpacing;
+        var totalYSpacing = ySpacing;
+        if (! definition.absolute) {
+            totalXSpacing = entity_size[0] + xSpacing;
+            totalYSpacing = entity_size[1] + ySpacing;
+        }
         var transforms = [];
         var names = [];
         // Prepare transforms and names arrrays that will be passed to opPattern()
@@ -92,8 +100,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 names = append(names, id[0] ~ '-' ~ i);
                 // debug(context, "row-col: " ~ row ~ "-" ~ col);
                 transforms = append(transforms, transform(vector(
-                    rowsDirection * row * (entity_size[0] + xSpacing) + definition.borderXMargin,
-                    colsDirection * col * (entity_size[1] + ySpacing) + definition.borderYMargin,
+                    rowsDirection * row * totalXSpacing + definition.borderXMargin,
+                    colsDirection * col * totalYSpacing + definition.borderYMargin,
                     0*inch
                 )));
                 i += 1;
