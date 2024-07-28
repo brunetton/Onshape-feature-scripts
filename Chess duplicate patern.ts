@@ -100,8 +100,8 @@ export const chessPattern = defineFeature(function(context is Context, id is Id,
                 names = append(names, id[0] ~ '-' ~ i);
                 // debug(context, "row-col: " ~ row ~ "-" ~ col);
                 transforms = append(transforms, transform(vector(
-                    rowsDirection * row * totalXSpacing + definition.borderXMargin,
-                    colsDirection * col * totalYSpacing + definition.borderYMargin,
+                    rowsDirection * row * totalXSpacing + definition.borderXMargin * rowsDirection,
+                    colsDirection * col * totalYSpacing + definition.borderYMargin * colsDirection,
                     0*inch
                 )));
                 i += 1;
